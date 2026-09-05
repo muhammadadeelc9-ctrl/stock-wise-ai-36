@@ -40,7 +40,7 @@ export function parseCsv(text: string): ParseResult {
   const nonEmpty = lines.filter((l) => l.some((v) => v.trim() !== ""));
   if (nonEmpty.length === 0) return { headers: [], rows: [] };
 
-  const headers = nonEmpty[0].map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
+  const headers = (nonEmpty[0] ?? []).map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
   const rows = nonEmpty.slice(1).map((line) => {
     const obj: CsvRow = {};
     headers.forEach((h, idx) => {
@@ -53,7 +53,7 @@ export function parseCsv(text: string): ParseResult {
 
 export function toCsv(rows: Record<string, string | number | null>[], headers?: string[]) {
   if (rows.length === 0) return "";
-  const cols = headers ?? Object.keys(rows[0]);
+  const cols = headers ?? Object.keys(rows[0] ?? {});
   const esc = (v: string | number | null) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
