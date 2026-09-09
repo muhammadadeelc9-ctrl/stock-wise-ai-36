@@ -34,7 +34,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>(search.mode);
+  const [mode, setMode] = useState<Mode>(search.mode ?? "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -91,14 +91,6 @@ function AuthPage() {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function google() {
-    try {
-      await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
     }
   }
 
@@ -180,17 +172,6 @@ function AuthPage() {
               {mode === "signup" ? "Create account" : mode === "forgot" ? "Send reset link" : "Sign in"}
             </Button>
           </form>
-
-          {mode !== "forgot" ? (
-            <>
-              <div className="my-6 flex items-center gap-3 text-xs text-faint">
-                <span className="h-px flex-1 bg-line" /> or <span className="h-px flex-1 bg-line" />
-              </div>
-              <Button variant="outline" className="w-full" onClick={google} type="button">
-                Continue with Google
-              </Button>
-            </>
-          ) : null}
 
           <div className="mt-6 space-y-2 text-sm text-muted-foreground">
             {mode === "signin" ? (
