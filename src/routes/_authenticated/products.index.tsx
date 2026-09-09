@@ -36,9 +36,14 @@ import { useDeleteProduct, useInventory, useSaveProduct, type ProductInput } fro
 import { money, num, shortDate } from "@/lib/format";
 import type { Product, StockStatus } from "@/lib/types";
 
-type Search = { q?: string; status?: string; category?: string; sort?: string };
+type Search = {
+  q?: string | undefined;
+  status?: string | undefined;
+  category?: string | undefined;
+  sort?: string | undefined;
+};
 
-export const Route = createFileRoute("/_authenticated/products")({
+export const Route = createFileRoute("/_authenticated/products/")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     ...(typeof s["q"] === "string" && s["q"] ? { q: s["q"] } : {}),
     ...(typeof s["status"] === "string" && s["status"] ? { status: s["status"] } : {}),
