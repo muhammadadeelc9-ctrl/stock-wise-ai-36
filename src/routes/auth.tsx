@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 type Mode = "signin" | "signup" | "forgot";
 
+type AuthSearch = { mode?: "signin" | "signup"; demo?: string };
+
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    mode: (search["mode"] === "signup" ? "signup" : "signin") as Mode,
-    demo: search["demo"] === "1" ? "1" : undefined,
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+    mode: search["mode"] === "signup" ? "signup" : "signin",
+    ...(search["demo"] === "1" ? { demo: "1" } : {}),
   }),
   head: () => ({
     meta: [
