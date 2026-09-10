@@ -16,7 +16,11 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedForecastRouteImport } from './routes/_authenticated/forecast'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedOverstockRouteImport } from './routes/_authenticated/overstock'
+import { Route as AuthenticatedRecommendationsRouteImport } from './routes/_authenticated/recommendations'
+import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
+import { Route as AuthenticatedSlowMovingRouteImport } from './routes/_authenticated/slow-moving'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedProductsIdRouteImport } from './routes/_authenticated/products.$id'
 
@@ -54,9 +58,30 @@ const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOverstockRoute = AuthenticatedOverstockRouteImport.update({
+  id: '/overstock',
+  path: '/overstock',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRecommendationsRoute =
+  AuthenticatedRecommendationsRouteImport.update({
+    id: '/recommendations',
+    path: '/recommendations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRiskRoute = AuthenticatedRiskRouteImport.update({
+  id: '/risk',
+  path: '/risk',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
   id: '/sales',
   path: '/sales',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSlowMovingRoute = AuthenticatedSlowMovingRouteImport.update({
+  id: '/slow-moving',
+  path: '/slow-moving',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProductsIndexRoute =
@@ -78,7 +103,11 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/forecast': typeof AuthenticatedForecastRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/overstock': typeof AuthenticatedOverstockRoute
+  '/recommendations': typeof AuthenticatedRecommendationsRoute
+  '/risk': typeof AuthenticatedRiskRoute
   '/sales': typeof AuthenticatedSalesRoute
+  '/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
 }
@@ -89,7 +118,11 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/forecast': typeof AuthenticatedForecastRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/overstock': typeof AuthenticatedOverstockRoute
+  '/recommendations': typeof AuthenticatedRecommendationsRoute
+  '/risk': typeof AuthenticatedRiskRoute
   '/sales': typeof AuthenticatedSalesRoute
+  '/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products': typeof AuthenticatedProductsIndexRoute
 }
@@ -102,7 +135,11 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/forecast': typeof AuthenticatedForecastRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
+  '/_authenticated/overstock': typeof AuthenticatedOverstockRoute
+  '/_authenticated/recommendations': typeof AuthenticatedRecommendationsRoute
+  '/_authenticated/risk': typeof AuthenticatedRiskRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
+  '/_authenticated/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/_authenticated/products/$id': typeof AuthenticatedProductsIdRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
 }
@@ -115,7 +152,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/forecast'
     | '/inventory'
+    | '/overstock'
+    | '/recommendations'
+    | '/risk'
     | '/sales'
+    | '/slow-moving'
     | '/products/$id'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -126,7 +167,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/forecast'
     | '/inventory'
+    | '/overstock'
+    | '/recommendations'
+    | '/risk'
     | '/sales'
+    | '/slow-moving'
     | '/products/$id'
     | '/products'
   id:
@@ -138,7 +183,11 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/forecast'
     | '/_authenticated/inventory'
+    | '/_authenticated/overstock'
+    | '/_authenticated/recommendations'
+    | '/_authenticated/risk'
     | '/_authenticated/sales'
+    | '/_authenticated/slow-moving'
     | '/_authenticated/products/$id'
     | '/_authenticated/products/'
   fileRoutesById: FileRoutesById
@@ -201,11 +250,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/overstock': {
+      id: '/_authenticated/overstock'
+      path: '/overstock'
+      fullPath: '/overstock'
+      preLoaderRoute: typeof AuthenticatedOverstockRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/recommendations': {
+      id: '/_authenticated/recommendations'
+      path: '/recommendations'
+      fullPath: '/recommendations'
+      preLoaderRoute: typeof AuthenticatedRecommendationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/risk': {
+      id: '/_authenticated/risk'
+      path: '/risk'
+      fullPath: '/risk'
+      preLoaderRoute: typeof AuthenticatedRiskRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sales': {
       id: '/_authenticated/sales'
       path: '/sales'
       fullPath: '/sales'
       preLoaderRoute: typeof AuthenticatedSalesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/slow-moving': {
+      id: '/_authenticated/slow-moving'
+      path: '/slow-moving'
+      fullPath: '/slow-moving'
+      preLoaderRoute: typeof AuthenticatedSlowMovingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/products/': {
@@ -229,7 +306,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedForecastRoute: typeof AuthenticatedForecastRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
+  AuthenticatedOverstockRoute: typeof AuthenticatedOverstockRoute
+  AuthenticatedRecommendationsRoute: typeof AuthenticatedRecommendationsRoute
+  AuthenticatedRiskRoute: typeof AuthenticatedRiskRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
+  AuthenticatedSlowMovingRoute: typeof AuthenticatedSlowMovingRoute
   AuthenticatedProductsIdRoute: typeof AuthenticatedProductsIdRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
 }
@@ -238,7 +319,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedForecastRoute: AuthenticatedForecastRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
+  AuthenticatedOverstockRoute: AuthenticatedOverstockRoute,
+  AuthenticatedRecommendationsRoute: AuthenticatedRecommendationsRoute,
+  AuthenticatedRiskRoute: AuthenticatedRiskRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
+  AuthenticatedSlowMovingRoute: AuthenticatedSlowMovingRoute,
   AuthenticatedProductsIdRoute: AuthenticatedProductsIdRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
 }
