@@ -23,6 +23,7 @@ import { Route as AuthenticatedRecommendationsRouteImport } from './routes/_auth
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRiskRouteImport } from './routes/_authenticated/risk'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSlowMovingRouteImport } from './routes/_authenticated/slow-moving'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products.index'
 import { Route as AuthenticatedProductsIdRouteImport } from './routes/_authenticated/products.$id'
@@ -97,6 +98,11 @@ const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
   path: '/sales',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSlowMovingRoute = AuthenticatedSlowMovingRouteImport.update({
   id: '/slow-moving',
   path: '/slow-moving',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/risk': typeof AuthenticatedRiskRoute
   '/sales': typeof AuthenticatedSalesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/risk': typeof AuthenticatedRiskRoute
   '/sales': typeof AuthenticatedSalesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/products/$id': typeof AuthenticatedProductsIdRoute
   '/products': typeof AuthenticatedProductsIndexRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/risk': typeof AuthenticatedRiskRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/slow-moving': typeof AuthenticatedSlowMovingRoute
   '/_authenticated/products/$id': typeof AuthenticatedProductsIdRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/risk'
     | '/sales'
+    | '/settings'
     | '/slow-moving'
     | '/products/$id'
     | '/products/'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/risk'
     | '/sales'
+    | '/settings'
     | '/slow-moving'
     | '/products/$id'
     | '/products'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/risk'
     | '/_authenticated/sales'
+    | '/_authenticated/settings'
     | '/_authenticated/slow-moving'
     | '/_authenticated/products/$id'
     | '/_authenticated/products/'
@@ -335,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSalesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/slow-moving': {
       id: '/_authenticated/slow-moving'
       path: '/slow-moving'
@@ -370,6 +389,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedRiskRoute: typeof AuthenticatedRiskRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSlowMovingRoute: typeof AuthenticatedSlowMovingRoute
   AuthenticatedProductsIdRoute: typeof AuthenticatedProductsIdRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
@@ -386,6 +406,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedRiskRoute: AuthenticatedRiskRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSlowMovingRoute: AuthenticatedSlowMovingRoute,
   AuthenticatedProductsIdRoute: AuthenticatedProductsIdRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
