@@ -119,16 +119,13 @@ function SalesPage() {
       const parsed = parseCsv(await file.text());
       const found: ValidationIssue[] = [];
       const valid: {
-        user_id: string;
-        business_id: string;
         product_id: string;
         sale_date: string;
         quantity: number;
         unit_price: number;
       }[] = [];
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId || !business) throw new Error("Not signed in");
+      const userId = await requireUserId();
+      if (!business) throw new Error("No business loaded");
 
       const bySku = new Map(snapshot!.items.map((i) => [i.product.sku.toLowerCase(), i]));
       const byName = new Map(snapshot!.items.map((i) => [i.product.name.toLowerCase(), i]));
@@ -157,8 +154,6 @@ function SalesPage() {
           return;
         }
         valid.push({
-          user_id: userId,
-          business_id: business.id,
           product_id: item.product.id,
           sale_date: d,
           quantity,
@@ -167,27 +162,21 @@ function SalesPage() {
       });
 
       if (valid.length > 0) {
-        const { error: insertError } = await supabase.from("sales").insert(valid);
-        if (insertError) throw insertError;
-        // reduce stock for each affected product
-        const byProduct = new Map<string, number>();
-        for (const v of valid)
-          byProduct.set(v.product_id, (byProduct.get(v.product_id) ?? 0) + v.quantity);
-        for (const [pid, sold] of byProduct) {
-          const item = snapshot!.byId[pid];
-          if (!item) continue;
-          await supabase
-            .from("products")
-            .update({ current_stock: Math.max(0, item.product.current_stock - sold) })
-            .eq("id", pid);
-          await supabase.from("inventory_movements").insert({
-            user_id: userId,
-            business_id: business.id,
-            product_id: pid,
-            movement_type: "sold",
-            quantity: -sold,
+        const remaining = new Map<string, number>();
+        for (const v of valid) {
+          const item = snapshot!.byId[v.product_id];
+          const stock = remaining.get(v.product_id) ?? item?.product.current_stock ?? 0;
+          await recordSaleRow({
+            userId,
+            businessId: business.id,
+            product_id: v.product_id,
+            quantity: v.quantity,
+            unit_price: v.unit_price,
+            sale_date: v.sale_date,
+            currentStock: stock,
             reason: "CSV import",
           });
+          remaining.set(v.product_id, Math.max(0, stock - v.quantity));
         }
         invalidate();
       }

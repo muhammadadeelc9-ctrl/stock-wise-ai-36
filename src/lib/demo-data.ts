@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { newId, nowIso, putMany, removeWhere } from "@/lib/local-db";
+import type { Movement, Product, Sale } from "@/lib/types";
 
 type Scenario =
   | "high_demand"
@@ -91,14 +92,15 @@ export async function loadDemoData(
   businessId: string,
   today = new Date(),
 ): Promise<DemoResult> {
-  // clear existing data for a clean demo
-  await supabase.from("sales").delete().eq("business_id", businessId);
-  await supabase.from("inventory_movements").delete().eq("business_id", businessId);
-  await supabase.from("alerts").delete().eq("business_id", businessId);
-  await supabase.from("recommendation_states").delete().eq("business_id", businessId);
-  await supabase.from("products").delete().eq("business_id", businessId);
+  const mine = (row: { business_id: string }) => row.business_id === businessId;
+  await removeWhere<Sale>("sales", mine);
+  await removeWhere<Movement>("movements", mine);
+  await removeWhere<{ id: string; business_id: string }>("alerts", mine);
+  await removeWhere<{ id: string; business_id: string }>("recommendation_states", mine);
+  await removeWhere<Product>("products", mine);
 
-  const productRows = SEEDS.map((s) => ({
+  const products: (Product & { user_id: string })[] = SEEDS.map((s) => ({
+    id: newId(),
     user_id: userId,
     business_id: businessId,
     name: s.name,
@@ -111,26 +113,13 @@ export async function loadDemoData(
     min_stock: s.min,
     max_stock: s.max,
     lead_time_days: s.lead,
+    created_at: nowIso(),
   }));
+  await putMany("products", products);
 
-  const { data: inserted, error } = await supabase
-    .from("products")
-    .insert(productRows)
-    .select("id, sku");
-  if (error) throw error;
-
-  const idBySku = new Map<string, string>();
-  for (const row of inserted ?? []) idBySku.set(row.sku as string, row.id as string);
-
+  const idBySku = new Map(products.map((p) => [p.sku, p.id]));
   const random = rng(20260905);
-  const sales: {
-    user_id: string;
-    business_id: string;
-    product_id: string;
-    sale_date: string;
-    quantity: number;
-    unit_price: number;
-  }[] = [];
+  const sales: (Sale & { user_id: string })[] = [];
 
   for (const s of SEEDS) {
     const productId = idBySku.get(s.sku);
@@ -147,37 +136,37 @@ export async function loadDemoData(
       const date = new Date(today.getTime() - age * 86400000).toISOString().slice(0, 10);
       const discount = random() < 0.12 ? 0.9 : 1;
       sales.push({
+        id: newId(),
         user_id: userId,
         business_id: businessId,
         product_id: productId,
         sale_date: date,
         quantity: qty,
         unit_price: Math.round(s.price * discount * 100) / 100,
+        created_at: nowIso(),
       });
     }
   }
+  await putMany("sales", sales);
 
-  for (let i = 0; i < sales.length; i += 500) {
-    const { error: saleError } = await supabase.from("sales").insert(sales.slice(i, i + 500));
-    if (saleError) throw saleError;
-  }
-
-  const movements = SEEDS.flatMap((s) => {
+  const movements: (Movement & { user_id: string })[] = SEEDS.flatMap((s) => {
     const productId = idBySku.get(s.sku);
     if (!productId) return [];
     return [
       {
+        id: newId(),
         user_id: userId,
         business_id: businessId,
         product_id: productId,
-        movement_type: "received",
+        movement_type: "received" as const,
         quantity: s.stock,
         reason: "Opening stock from supplier",
         actor: "Demo import",
+        created_at: nowIso(),
       },
     ];
   });
-  await supabase.from("inventory_movements").insert(movements);
+  await putMany("movements", movements);
 
-  return { products: productRows.length, sales: sales.length };
+  return { products: products.length, sales: sales.length };
 }
