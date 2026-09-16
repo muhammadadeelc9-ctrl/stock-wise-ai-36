@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
 import { analyzeInventory, type InventorySnapshot } from "./analytics";
+import {
+  getAll,
+  newId,
+  nowIso,
+  put,
+  putMany,
+  remove,
+  removeWhere,
+  requireUserId,
+} from "./local-db";
 import type {
   Alert,
   Business,
@@ -13,10 +22,31 @@ import type {
   UserSettings,
 } from "./types";
 
-async function requireUserId() {
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) throw new Error("Not signed in");
-  return data.user.id;
+type Owned = { user_id?: string };
+
+function byBusiness<T extends { business_id: string }>(rows: T[], businessId: string) {
+  return rows.filter((r) => r.business_id === businessId);
+}
+
+export async function getOrCreateBusiness(userId: string): Promise<Business> {
+  const all = await getAll<Business & Owned>("businesses");
+  const mine = all
+    .filter((b) => b.user_id === userId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  if (mine.length > 0) return mine[0] as Business;
+  const created: Business = {
+    id: newId(),
+    user_id: userId,
+    name: "My Business",
+    business_type: "Retail",
+    currency: "USD",
+    country: "",
+    default_lead_time_days: 10,
+    low_stock_threshold: 10,
+    created_at: nowIso(),
+  };
+  await put("businesses", created);
+  return created;
 }
 
 export function useBusiness() {
@@ -24,22 +54,7 @@ export function useBusiness() {
     queryKey: ["business"],
     queryFn: async (): Promise<Business | null> => {
       const userId = await requireUserId();
-      const { data, error } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-      if (error) throw error;
-      if (data && data.length > 0) return data[0] as unknown as Business;
-
-      const { data: created, error: insertError } = await supabase
-        .from("businesses")
-        .insert({ user_id: userId })
-        .select("*")
-        .single();
-      if (insertError) throw insertError;
-      return created as unknown as Business;
+      return getOrCreateBusiness(userId);
     },
     staleTime: 60_000,
   });
@@ -51,13 +66,8 @@ export function useProducts() {
     queryKey: ["products", business?.id],
     enabled: !!business?.id,
     queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("business_id", business!.id)
-        .order("name");
-      if (error) throw error;
-      return (data ?? []) as unknown as Product[];
+      const rows = byBusiness(await getAll<Product>("products"), business!.id);
+      return rows.sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 }
@@ -68,14 +78,8 @@ export function useSales() {
     queryKey: ["sales", business?.id],
     enabled: !!business?.id,
     queryFn: async (): Promise<Sale[]> => {
-      const { data, error } = await supabase
-        .from("sales")
-        .select("*")
-        .eq("business_id", business!.id)
-        .order("sale_date", { ascending: false })
-        .limit(20000);
-      if (error) throw error;
-      return (data ?? []) as unknown as Sale[];
+      const rows = byBusiness(await getAll<Sale>("sales"), business!.id);
+      return rows.sort((a, b) => b.sale_date.localeCompare(a.sale_date));
     },
   });
 }
@@ -86,14 +90,8 @@ export function useMovements() {
     queryKey: ["movements", business?.id],
     enabled: !!business?.id,
     queryFn: async (): Promise<Movement[]> => {
-      const { data, error } = await supabase
-        .from("inventory_movements")
-        .select("*")
-        .eq("business_id", business!.id)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data ?? []) as unknown as Movement[];
+      const rows = byBusiness(await getAll<Movement>("movements"), business!.id);
+      return rows.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 500);
     },
   });
 }
@@ -104,14 +102,8 @@ export function useAlerts() {
     queryKey: ["alerts", business?.id],
     enabled: !!business?.id,
     queryFn: async (): Promise<Alert[]> => {
-      const { data, error } = await supabase
-        .from("alerts")
-        .select("*")
-        .eq("business_id", business!.id)
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as unknown as Alert[];
+      const rows = byBusiness(await getAll<Alert>("alerts"), business!.id);
+      return rows.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 200);
     },
   });
 }
@@ -122,12 +114,10 @@ export function useRecommendationStates() {
     queryKey: ["rec-states", business?.id],
     enabled: !!business?.id,
     queryFn: async (): Promise<RecommendationState[]> => {
-      const { data, error } = await supabase
-        .from("recommendation_states")
-        .select("*")
-        .eq("business_id", business!.id);
-      if (error) throw error;
-      return (data ?? []) as unknown as RecommendationState[];
+      const rows = await getAll<RecommendationState & { business_id: string }>(
+        "recommendation_states",
+      );
+      return byBusiness(rows, business!.id);
     },
   });
 }
@@ -137,25 +127,23 @@ export function useSettings() {
     queryKey: ["settings"],
     queryFn: async (): Promise<UserSettings | null> => {
       const userId = await requireUserId();
-      const { data, error } = await supabase
-        .from("user_settings")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (error) throw error;
-      if (data) return data as unknown as UserSettings;
-      const { data: created, error: e2 } = await supabase
-        .from("user_settings")
-        .insert({ user_id: userId })
-        .select("*")
-        .single();
-      if (e2) throw e2;
-      return created as unknown as UserSettings;
+      const rows = await getAll<UserSettings>("settings");
+      const mine = rows.find((r) => r.user_id === userId);
+      if (mine) return mine;
+      const created: UserSettings = {
+        user_id: userId,
+        notify_stockout: true,
+        notify_overstock: true,
+        notify_slow_moving: true,
+        notify_email: false,
+      };
+      await put("settings", created);
+      return created;
     },
   });
 }
 
-/** The analyzed snapshot every intelligence screen reads from. */
+/** The analyzed snapshot every intelligence screen reads from — computed on device. */
 export function useInventory(): {
   snapshot: InventorySnapshot | null;
   isLoading: boolean;
@@ -186,12 +174,43 @@ export function useInvalidateAll() {
     void qc.invalidateQueries({ queryKey: ["alerts"] });
     void qc.invalidateQueries({ queryKey: ["rec-states"] });
     void qc.invalidateQueries({ queryKey: ["business"] });
+    void qc.invalidateQueries({ queryKey: ["settings"] });
   };
 }
 
-/* ------------------------- mutations ------------------------- */
+/* ------------------------- writes ------------------------- */
 
 export type ProductInput = Omit<Product, "id" | "business_id" | "created_at">;
+
+export async function addMovementRow(input: {
+  userId: string;
+  businessId: string;
+  productId: string;
+  movementType: Movement["movement_type"];
+  quantity: number;
+  reason: string | null;
+  actor?: string | null;
+}) {
+  const row: Movement & Owned = {
+    id: newId(),
+    user_id: input.userId,
+    business_id: input.businessId,
+    product_id: input.productId,
+    movement_type: input.movementType,
+    quantity: input.quantity,
+    reason: input.reason,
+    actor: input.actor ?? null,
+    created_at: nowIso(),
+  };
+  await put("movements", row);
+}
+
+export async function setStock(productId: string, stock: number) {
+  const products = await getAll<Product>("products");
+  const product = products.find((p) => p.id === productId);
+  if (!product) return;
+  await put("products", { ...product, current_stock: Math.max(0, Math.round(stock)) });
+}
 
 export function useSaveProduct() {
   const { data: business } = useBusiness();
@@ -200,27 +219,30 @@ export function useSaveProduct() {
     mutationFn: async ({ id, values }: { id?: string; values: ProductInput }) => {
       const userId = await requireUserId();
       if (id) {
-        const { error } = await supabase.from("products").update(values).eq("id", id);
-        if (error) throw error;
+        const existing = (await getAll<Product>("products")).find((p) => p.id === id);
+        if (!existing) throw new Error("Product not found");
+        await put("products", { ...existing, ...values });
         return id;
       }
-      const { data, error } = await supabase
-        .from("products")
-        .insert({ ...values, user_id: userId, business_id: business!.id })
-        .select("id")
-        .single();
-      if (error) throw error;
+      const created: Product & Owned = {
+        ...values,
+        id: newId(),
+        user_id: userId,
+        business_id: business!.id,
+        created_at: nowIso(),
+      };
+      await put("products", created);
       if (values.current_stock > 0) {
-        await supabase.from("inventory_movements").insert({
-          user_id: userId,
-          business_id: business!.id,
-          product_id: data.id,
-          movement_type: "received",
+        await addMovementRow({
+          userId,
+          businessId: business!.id,
+          productId: created.id,
+          movementType: "received",
           quantity: values.current_stock,
           reason: "Opening stock",
         });
       }
-      return data.id as string;
+      return created.id;
     },
     onSuccess: invalidate,
   });
@@ -230,10 +252,48 @@ export function useDeleteProduct() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      await remove("products", id);
+      await removeWhere<Sale>("sales", (s) => s.product_id === id);
+      await removeWhere<Movement>("movements", (m) => m.product_id === id);
+      await removeWhere<Alert & { id: string }>("alerts", (a) => a.product_id === id);
+      await removeWhere<RecommendationState & { id: string }>(
+        "recommendation_states",
+        (r) => r.product_id === id,
+      );
     },
     onSuccess: invalidate,
+  });
+}
+
+export async function recordSaleRow(input: {
+  userId: string;
+  businessId: string;
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  sale_date: string;
+  currentStock: number;
+  reason?: string;
+}) {
+  const sale: Sale & Owned = {
+    id: newId(),
+    user_id: input.userId,
+    business_id: input.businessId,
+    product_id: input.product_id,
+    sale_date: input.sale_date,
+    quantity: input.quantity,
+    unit_price: input.unit_price,
+    created_at: nowIso(),
+  };
+  await put("sales", sale);
+  await setStock(input.product_id, input.currentStock - input.quantity);
+  await addMovementRow({
+    userId: input.userId,
+    businessId: input.businessId,
+    productId: input.product_id,
+    movementType: "sold",
+    quantity: -input.quantity,
+    reason: input.reason ?? "Sale recorded",
   });
 }
 
@@ -249,27 +309,7 @@ export function useAddSale() {
       currentStock: number;
     }) => {
       const userId = await requireUserId();
-      const { error } = await supabase.from("sales").insert({
-        user_id: userId,
-        business_id: business!.id,
-        product_id: input.product_id,
-        quantity: input.quantity,
-        unit_price: input.unit_price,
-        sale_date: input.sale_date,
-      });
-      if (error) throw error;
-      await supabase
-        .from("products")
-        .update({ current_stock: Math.max(0, input.currentStock - input.quantity) })
-        .eq("id", input.product_id);
-      await supabase.from("inventory_movements").insert({
-        user_id: userId,
-        business_id: business!.id,
-        product_id: input.product_id,
-        movement_type: "sold",
-        quantity: -input.quantity,
-        reason: "Sale recorded",
-      });
+      await recordSaleRow({ ...input, userId, businessId: business!.id });
     },
     onSuccess: invalidate,
   });
@@ -293,20 +333,15 @@ export function useAddMovement() {
           : input.movement_type === "adjusted"
             ? input.quantity
             : -Math.abs(input.quantity);
-      const { error } = await supabase.from("inventory_movements").insert({
-        user_id: userId,
-        business_id: business!.id,
-        product_id: input.product_id,
-        movement_type: input.movement_type,
+      await addMovementRow({
+        userId,
+        businessId: business!.id,
+        productId: input.product_id,
+        movementType: input.movement_type,
         quantity: delta,
         reason: input.reason,
       });
-      if (error) throw error;
-      const { error: e2 } = await supabase
-        .from("products")
-        .update({ current_stock: Math.max(0, input.currentStock + delta) })
-        .eq("id", input.product_id);
-      if (e2) throw e2;
+      await setStock(input.product_id, input.currentStock + delta);
     },
     onSuccess: invalidate,
   });
@@ -322,17 +357,18 @@ export function useSetRecommendationState() {
       quantity?: number;
     }) => {
       const userId = await requireUserId();
-      const { error } = await supabase.from("recommendation_states").upsert(
-        {
-          user_id: userId,
-          business_id: business!.id,
-          product_id: input.product_id,
-          status: input.status,
-          quantity: input.quantity ?? null,
-        },
-        { onConflict: "product_id" },
+      const rows = await getAll<RecommendationState & { business_id: string } & Owned>(
+        "recommendation_states",
       );
-      if (error) throw error;
+      const existing = rows.find((r) => r.product_id === input.product_id);
+      await put("recommendation_states", {
+        id: existing?.id ?? newId(),
+        user_id: userId,
+        business_id: business!.id,
+        product_id: input.product_id,
+        status: input.status,
+        quantity: input.quantity ?? null,
+      });
     },
     onSuccess: invalidate,
   });
@@ -342,8 +378,9 @@ export function useMarkAlertRead() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("alerts").update({ is_read: true }).in("id", ids);
-      if (error) throw error;
+      const rows = await getAll<Alert>("alerts");
+      const updated = rows.filter((a) => ids.includes(a.id)).map((a) => ({ ...a, is_read: true }));
+      await putMany("alerts", updated);
     },
     onSuccess: invalidate,
   });
