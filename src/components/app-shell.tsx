@@ -24,9 +24,10 @@ import {
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { OfflineBanner, OnlineStatus } from "@/components/online-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { clearSession } from "@/lib/local-db";
 import { useAlerts, useBusiness } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    clearSession();
     toast.success("Signed out");
     void navigate({ to: "/auth", replace: true });
   }
@@ -172,7 +173,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="pl-9"
             />
           </form>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <OnlineStatus className="hidden sm:inline-flex" />
             <Link
               to="/alerts"
               className="relative rounded-md p-2 text-muted-foreground hover:bg-panel2 hover:text-foreground"
@@ -185,7 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <Link
               to="/settings"
-              className="hidden items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground sm:flex"
+              className="hidden items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground lg:flex"
             >
               <BarChart3 className="size-3.5 text-primary" />
               {business?.name ?? "My Business"}
@@ -193,7 +195,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         </header>
-        <main className="px-4 py-8 md:px-8">{children}</main>
+        <OfflineBanner />
+        <main className="px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );

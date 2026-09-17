@@ -31,8 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-import { useAddSale, useBusiness, useInventory, useInvalidateAll, useSales } from "@/lib/data";
+import { requireUserId } from "@/lib/local-db";
+import {
+  recordSaleRow,
+  useAddSale,
+  useBusiness,
+  useInventory,
+  useInvalidateAll,
+  useSales,
+} from "@/lib/data";
 import { SALES_TEMPLATE, downloadFile, parseCsv, toCsv, type ValidationIssue } from "@/lib/csv";
 import { money, num, shortDate } from "@/lib/format";
 
