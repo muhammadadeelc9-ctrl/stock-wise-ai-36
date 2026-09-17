@@ -173,7 +173,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="pl-9"
             />
           </form>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <OnlineStatus className="hidden xs:inline-flex sm:inline-flex" />
             <Link
               to="/alerts"
               className="relative rounded-md p-2 text-muted-foreground hover:bg-panel2 hover:text-foreground"
@@ -186,7 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <Link
               to="/settings"
-              className="hidden items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground sm:flex"
+              className="hidden items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground lg:flex"
             >
               <BarChart3 className="size-3.5 text-primary" />
               {business?.name ?? "My Business"}
@@ -194,7 +195,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         </header>
-        <main className="px-4 py-8 md:px-8">{children}</main>
+        <OfflineBanner />
+        <main className="px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );
