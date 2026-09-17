@@ -174,7 +174,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </form>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <OnlineStatus className="hidden xs:inline-flex sm:inline-flex" />
+            <OnlineStatus className="hidden sm:inline-flex" />
             <Link
               to="/alerts"
               className="relative rounded-md p-2 text-muted-foreground hover:bg-panel2 hover:text-foreground"
