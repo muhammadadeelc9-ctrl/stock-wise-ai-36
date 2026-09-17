@@ -24,9 +24,10 @@ import {
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { OfflineBanner, OnlineStatus } from "@/components/online-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { clearSession } from "@/lib/local-db";
 import { useAlerts, useBusiness } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
