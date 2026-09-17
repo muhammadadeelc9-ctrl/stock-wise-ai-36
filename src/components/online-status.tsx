@@ -31,7 +31,7 @@ export function OnlineStatus({ className }: { className?: string }) {
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-wide uppercase",
         online
           ? "border-line text-muted-foreground"
-          : "border-warn/40 bg-warn/10 text-warn",
+          : "border-high/40 bg-high/10 text-high",
         className,
       )}
     >
@@ -46,7 +46,7 @@ export function OfflineBanner() {
   const online = useOnlineStatus();
   if (online) return null;
   return (
-    <div className="flex items-start gap-2 border-b border-warn/30 bg-warn/10 px-4 py-2 text-xs text-warn md:px-8">
+    <div className="flex items-start gap-2 border-b border-high/30 bg-high/10 px-4 py-2 text-xs text-high md:px-8">
       <CloudOff className="mt-0.5 size-3.5 shrink-0" />
       <p>
         You are offline. Stock Wise AI keeps working — every product, sale and stock change you make
